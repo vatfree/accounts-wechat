@@ -1,8 +1,8 @@
 Package.describe({
-    name: 'zhaoyao91:accounts-wechat',
+    name: 'ulion:accounts-wechat',
     version: '0.1.1',
     summary: 'meteor accounts package for wechat',
-    git: 'https://github.com/zhaoyao91/meteor-accounts-wechat',
+    git: 'https://github.com/ulion/meteor-accounts-wechat',
     documentation: 'README.md'
 });
 
