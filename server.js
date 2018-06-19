@@ -9,7 +9,7 @@ const whitelistedFields = [
     'privilege'
 ];
 
-const serviceName = WeChat.serviceName;
+const serviceName = Wechat.serviceName;
 const serviceVersion = 2;
 const serviceUrls = null;
 const serviceHandler = function (query) {
@@ -69,7 +69,7 @@ var getTokenResponse = function (config, query) {
         if (response.content.errcode)
             throw {message: response.content.errcode + " " + response.content.errmsg, response: response};
     } catch (err) {
-        throw _.extend(new Error("Failed to complete OAuth handshake with WeChat. " + err.message),
+        throw _.extend(new Error("Failed to complete OAuth handshake with Wechat. " + err.message),
             {response: err.response});
     }
 
@@ -99,7 +99,7 @@ var getIdentity = function (accessToken, openId) {
 
         return response.content;
     } catch (err) {
-        throw _.extend(new Error("Failed to fetch identity from WeChat. " + err.message),
+        throw _.extend(new Error("Failed to fetch identity from Wechat. " + err.message),
             {response: err.response});
     }
 };
@@ -108,7 +108,7 @@ var getIdentity = function (accessToken, openId) {
 OAuth.registerService(serviceName, serviceVersion, serviceUrls, serviceHandler);
 
 // retrieve credential
-WeChat.retrieveCredential = function (credentialToken, credentialSecret) {
+Wechat.retrieveCredential = function (credentialToken, credentialSecret) {
     return OAuth.retrieveCredential(credentialToken, credentialSecret);
 };
 

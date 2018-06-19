@@ -29,5 +29,5 @@ Package.onUse(function (api) {
     api.addFiles('wechat_configure.js', 'client');
     api.addFiles('wechat_login_button.css', 'client');
 
-    api.export('WeChat')
+    api.export('Wechat')
 });

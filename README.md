@@ -12,7 +12,7 @@ Because this package is generally used in China, this doc will be written in chi
 
 ### 1. 添加包
 ```
-meteor add zhaoyao91:accounts-wechat
+meteor add ulion:accounts-wechat
 meteor add service-configuration
 ```
 
@@ -20,7 +20,7 @@ meteor add service-configuration
 server端：
 ```
 ServiceConfiguration.configurations.upsert({
-    service: WeChat.serviceName // 可以通过Meteor.settings.public.wechatServiceName来修改这个值
+    service: Wechat.serviceName // 可以通过Meteor.settings.public.wechatServiceName来修改这个值
 }, {
     $set: {
         appId: '...',
@@ -34,8 +34,8 @@ ServiceConfiguration.configurations.upsert({
 ### 3. 登录
 client端：
 ```
-Meteor.loginWithWeChat(function(err, res){
-   ... 
+Meteor.loginWithWechat(function(err, res){
+   ...
 })
 ```
 

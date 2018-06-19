@@ -1,11 +1,11 @@
-const serviceName = WeChat.serviceName
+const serviceName = Wechat.serviceName
 
-// Request WeChat credentials for the user
+// Request Wechat credentials for the user
 // @param options {optional}
 // @param credentialRequestCompleteCallback {Function} Callback function to call on
 //   completion. Takes one argument, credentialToken on success, or Error on
 //   error.
-WeChat.requestCredential = function (options, credentialRequestCompleteCallback) {
+Wechat.requestCredential = function (options, credentialRequestCompleteCallback) {
   // support both (options, callback) and (callback).
   if (!credentialRequestCompleteCallback && typeof options === 'function') {
     credentialRequestCompleteCallback = options
@@ -60,7 +60,7 @@ WeChat.requestCredential = function (options, credentialRequestCompleteCallback)
   }
 }
 
-Meteor.loginWithWeChat = function (options, callback) {
+Meteor.loginWithWechat = function (options, callback) {
   // support a callback without options
   if (!callback && typeof options === 'function') {
     callback = options
@@ -68,5 +68,5 @@ Meteor.loginWithWeChat = function (options, callback) {
   }
 
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
-  WeChat.requestCredential(options, credentialRequestCompleteCallback)
+  Wechat.requestCredential(options, credentialRequestCompleteCallback)
 }
