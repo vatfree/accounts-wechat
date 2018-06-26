@@ -1,6 +1,6 @@
 Package.describe({
     name: 'ulion:accounts-wechat',
-    version: '0.1.1',
+    version: '0.2.0',
     summary: 'meteor accounts package for wechat',
     git: 'https://github.com/ulion/meteor-accounts-wechat',
     documentation: 'README.md'

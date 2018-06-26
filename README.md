@@ -1,12 +1,11 @@
-# zhaoyao91:accounts-wechat
+# ulion:accounts-wechat
 Meteor accounts package for wechat.
 Because this package is generally used in China, this doc will be written in chinese.
 
 ## 简介
 - 使Meteor应用支持微**微信开放平台**登录
 - 支持绑定**微信公众平台**登录
-- 若需支持**微信公众平台**登录，请查看[https://github.com/zhaoyao91/meteor-accounts-wechat-mp](https://github.com/zhaoyao91/meteor-accounts-wechat-mp)
-- 请自行了解微信开放平台和公众平台的关系和区别
+- 在微信浏览器内利用OAuth登录，在微信浏览器之外为扫码登录
 
 ## 用法
 
@@ -25,8 +24,7 @@ ServiceConfiguration.configurations.upsert({
     $set: {
         appId: '...',
         secret: '...',
-        scope: 'snsapi_login',
-        mainId: 'openId'
+        mainId: 'unionId'
     }
 });
 ```
@@ -41,7 +39,3 @@ Meteor.loginWithWechat(function(err, res){
 
 ### Note
 微信开放平台相关应用的授权回调域、对应Meteor应用的ROOT_URL以及用户访问该应用的实际url必须保持一致。
-
-## 参考
-- [boxfish/meteor-accounts-wechat](https://github.com/boxfish/meteor-accounts-wechat/)
-- [boxfish/meteor-wechat](https://github.com/boxfish/meteor-wechat/)

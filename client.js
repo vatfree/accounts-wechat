@@ -1,5 +1,7 @@
 const serviceName = Wechat.serviceName
 
+Wechat.withinWeChatBrowser = (/micromessenger/i).test(navigator.userAgent);
+
 // Request Wechat credentials for the user
 // @param options {optional}
 // @param credentialRequestCompleteCallback {Function} Callback function to call on
@@ -23,7 +25,7 @@ Wechat.requestCredential = function (options, credentialRequestCompleteCallback)
   }
 
   var credentialToken = Random.secret()
-  var scope = (options && options.requestPermissions) || ['snsapi_login']
+  var scope = (options && options.requestPermissions) || [Wechat.withinWeChatBrowser ? 'snsapi_userinfo' : 'snsapi_login']
   scope = _.map(scope, encodeURIComponent).join(',')
   var loginStyle = OAuth._loginStyle(serviceName, config, options)
 
@@ -42,7 +44,7 @@ Wechat.requestCredential = function (options, credentialRequestCompleteCallback)
 
   function launchLogin (state) {
     var loginUrl =
-      'https://open.weixin.qq.com/connect/qrconnect' +
+      'https://open.weixin.qq.com/connect/' + (Wechat.withinWeChatBrowser ? 'oauth2/authorize' : 'qrconnect') +
       '?appid=' + config.appId +
       '&redirect_uri=' + OAuth._redirectUri(serviceName, config, null, {replaceLocalhost: true}) +
       '&response_type=code' +
