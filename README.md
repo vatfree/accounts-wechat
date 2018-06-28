@@ -24,6 +24,8 @@ ServiceConfiguration.configurations.upsert({
     $set: {
         appId: '...',
         secret: '...',
+        mpAppId: '...',
+        mpSecret: '...',
         mainId: 'unionId'
     }
 });

@@ -1,3 +1,4 @@
+const Base64 = Package.base64.Base64;
 const whitelistedFields = [
     'nickname',
     'sex',
@@ -20,8 +21,9 @@ const serviceHandler = function (query) {
     var response = getTokenResponse(config, query);
 
     const expiresAt = (+new Date) + (1000 * parseInt(response.expiresIn, 10));
-    const {accessToken, scope, openId, unionId} = response;
+    const {appId, accessToken, scope, openId, unionId} = response;
     let serviceData = {
+        appId,
         accessToken,
         expiresAt,
         openId,
@@ -48,6 +50,12 @@ const serviceHandler = function (query) {
 };
 
 var getTokenResponse = function (config, query) {
+    var state;
+    try {
+        state = JSON.parse(Base64.decode(query.state));
+    } catch (err) {
+        throw new Error("Failed to decode state in OAuth callback with Wechat: " + query.state);
+    }
     var response;
     try {
         //Request an access token
@@ -55,8 +63,8 @@ var getTokenResponse = function (config, query) {
             "https://api.weixin.qq.com/sns/oauth2/access_token", {
                 params: {
                     code: query.code,
-                    appid: config.appId,
-                    secret: OAuth.openSecret(config.secret),
+                    appid: state.appId,
+                    secret: OAuth.openSecret(state.appId == config.appId ? config.secret : config.mpSecret),
                     grant_type: 'authorization_code'
                 }
             }
@@ -74,6 +82,7 @@ var getTokenResponse = function (config, query) {
     }
 
     return {
+        appId: state.appId,
         accessToken: response.content.access_token,
         expiresIn: response.content.expires_in,
         refreshToken: response.content.refresh_token,

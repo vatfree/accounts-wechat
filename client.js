@@ -1,4 +1,5 @@
-const serviceName = Wechat.serviceName
+const serviceName = Wechat.serviceName;
+const Base64 = Package.base64.Base64;
 
 Wechat.withinWeChatBrowser = (/micromessenger/i).test(navigator.userAgent);
 
@@ -24,28 +25,26 @@ Wechat.requestCredential = function (options, credentialRequestCompleteCallback)
     return
   }
 
+  Wechat.signInWithMP = Wechat.withinWeChatBrowser && config.mpAppId;
+
   var credentialToken = Random.secret()
-  var scope = (options && options.requestPermissions) || [Wechat.withinWeChatBrowser ? 'snsapi_userinfo' : 'snsapi_login']
+  var scope = (options && options.requestPermissions) || [Wechat.signInWithMP ? 'snsapi_userinfo' : 'snsapi_login']
   scope = _.map(scope, encodeURIComponent).join(',')
   var loginStyle = OAuth._loginStyle(serviceName, config, options)
 
-  if (OAuth._stateParamAsync) {
-    OAuth._stateParamAsync(loginStyle, credentialToken, options.redirectUrl, (err, state) => {
-      if (err) {
-        console.error(err)
-      } else {
-        launchLogin(state)
-      }
-    })
-  } else {
-    var state = OAuth._stateParam(loginStyle, credentialToken, options.redirectUrl)
-    launchLogin(state)
-  }
+  var state = {
+    appId: Wechat.signInWithMP ? config.mpAppId : config.appId,
+    loginStyle: loginStyle,
+    credentialToken: credentialToken,
+    isCordova: Meteor.isCordova
+  };
+  state = Base64.encode(JSON.stringify(state));
+  launchLogin(state);
 
   function launchLogin (state) {
     var loginUrl =
-      'https://open.weixin.qq.com/connect/' + (Wechat.withinWeChatBrowser ? 'oauth2/authorize' : 'qrconnect') +
-      '?appid=' + config.appId +
+      'https://open.weixin.qq.com/connect/' + (Wechat.signInWithMP ? 'oauth2/authorize' : 'qrconnect') +
+      '?appid=' + (Wechat.signInWithMP ? config.mpAppId : config.appId)+
       '&redirect_uri=' + OAuth._redirectUri(serviceName, config, null, {replaceLocalhost: true}) +
       '&response_type=code' +
       '&scope=' + scope +
