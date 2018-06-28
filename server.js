@@ -1,4 +1,3 @@
-const Base64 = Package.base64.Base64;
 const whitelistedFields = [
     'nickname',
     'sex',
@@ -52,9 +51,9 @@ const serviceHandler = function (query) {
 var getTokenResponse = function (config, query) {
     var state;
     try {
-        state = JSON.parse(Base64.decode(query.state));
+        state = OAuth._stateFromQuery(query);
     } catch (err) {
-        throw new Error("Failed to decode state in OAuth callback with Wechat: " + query.state);
+        throw new Error("Failed to extract state in OAuth callback with Wechat: " + query.state);
     }
     var response;
     try {
