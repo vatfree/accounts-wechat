@@ -1,6 +1,6 @@
 Package.describe({
     name: 'ulion:accounts-wechat',
-    version: '0.2.2',
+    version: '0.3.0',
     summary: 'meteor accounts package for wechat',
     git: 'https://github.com/ulion/meteor-accounts-wechat',
     documentation: 'README.md'
@@ -29,5 +29,12 @@ Package.onUse(function (api) {
     api.addFiles('wechat_configure.js', 'client');
     api.addFiles('wechat_login_button.css', 'client');
 
-    api.export('Wechat')
+    api.export('WechatService')
 });
+
+/*
+// this dependency is optional, only if the cordova wechat plugin is installed and mobileAppId is configured.
+Cordova.depends({
+    'cordova-plugin-wechat': '2.3.0'
+});
+*/

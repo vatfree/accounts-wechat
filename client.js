@@ -1,13 +1,30 @@
-const serviceName = Wechat.serviceName;
+const serviceName = WechatService.serviceName;
 
-Wechat.withinWeChatBrowser = (/micromessenger/i).test(navigator.userAgent);
+WechatService.withinWeChatBrowser = (/micromessenger/i).test(navigator.userAgent);
+
+WechatService.signInMethodCfgs = {
+  mp: {
+    appIdField: 'mpAppId',
+    scope: 'snsapi_userinfo',
+    endpoint: 'oauth2/authorize'
+  },
+  webapp: {
+    appIdField: 'appId',
+    scope: 'snsapi_login',
+    endpoint: 'qrconnect'
+  },
+  mobile: {
+    appIdField: 'mobileAppId',
+    scope: 'snsapi_userinfo'
+  }
+};
 
 // Request Wechat credentials for the user
 // @param options {optional}
 // @param credentialRequestCompleteCallback {Function} Callback function to call on
 //   completion. Takes one argument, credentialToken on success, or Error on
 //   error.
-Wechat.requestCredential = function (options, credentialRequestCompleteCallback) {
+WechatService.requestCredential = function (options, credentialRequestCompleteCallback) {
   // support both (options, callback) and (callback).
   if (!credentialRequestCompleteCallback && typeof options === 'function') {
     credentialRequestCompleteCallback = options
@@ -24,34 +41,76 @@ Wechat.requestCredential = function (options, credentialRequestCompleteCallback)
     return
   }
 
-  Wechat.signInWithMP = Wechat.withinWeChatBrowser && config.mpAppId;
-  var appId = Wechat.signInWithMP ? config.mpAppId : config.appId;
-
-  var credentialToken = Random.secret()
-  var scope = (options && options.requestPermissions) || [Wechat.signInWithMP ? 'snsapi_userinfo' : 'snsapi_login']
-  scope = _.map(scope, encodeURIComponent).join(',')
-  var loginStyle = OAuth._loginStyle(serviceName, config, options)
-
-  if (OAuth._stateParamAsync) {
-    OAuth._stateParamAsync(loginStyle, credentialToken, options.redirectUrl, {appId}, (err, state) => {
-      if (err) {
-        console.error(err)
-      } else {
-        launchLogin(state)
+  WechatService.signInMethod = WechatService.withinWeChatBrowser && !!config.mpAppId ? 'mp' : 'webapp';
+  if (Meteor.isCordova && config.mobileAppId && Wechat) {
+    Wechat.isInstalled(function(installed) {
+      if (!installed) {
+        return prepareLogin(launchLogin);
       }
-    })
-  } else {
-    var state = OAuth._stateParam(loginStyle, credentialToken, options.redirectUrl, {appId})
-    launchLogin(state)
+      // WeChat app is installed
+      WechatService.signInMethod = 'mobile';
+
+      prepareLogin(function(signInMethodCfg, state) {
+        Wechat.auth(signInMethodCfg.scope, state, function(response) {
+          // send the 3rd party response directly to the server for processing
+          Meteor.call('handleWeChatOauthRequest', response, function(err, credentials) {
+            //console.log('handleWeChatOauthRequest ret:', err, JSON.stringify(credentials));
+            if (err) {
+              credentialRequestCompleteCallback && credentialRequestCompleteCallback(
+                new Meteor.Error("unauthroized", "WeChat handle oauth failed: " + err)
+              );
+              return;
+            }
+            OAuth._handleCredentialSecret(credentials.credentialToken, credentials.credentialSecret);
+            credentialRequestCompleteCallback && credentialRequestCompleteCallback(
+              credentials.credentialToken
+            );
+          });
+        }, function(reason) {
+          credentialRequestCompleteCallback && credentialRequestCompleteCallback(
+            new Meteor.Error("unauthroized", "WeChat authorization failed: " + reason)
+          );
+        });
+      });
+
+    }, function (reason) {
+      return prepareLogin(launchLogin);
+    });
+  }
+  else {
+    prepareLogin(launchLogin);
   }
 
-  function launchLogin (state) {
+  function prepareLogin(callback) {
+    let signInMethodCfg = WechatService.signInMethodCfg = WechatService.signInMethodCfgs[WechatService.signInMethod];
+    var appId = signInMethodCfg.appId = config[signInMethodCfg.appIdField];
+
+    var credentialToken = Random.secret()
+    var scope = (options && options.requestPermissions) || signInMethodCfg.scope;
+    scope = _.map(scope, encodeURIComponent).join(',')
+    var loginStyle = OAuth._loginStyle(serviceName, config, options)
+
+    if (OAuth._stateParamAsync) {
+      OAuth._stateParamAsync(loginStyle, credentialToken, options.redirectUrl, {appId}, (err, state) => {
+        if (err) {
+          console.error(err)
+        } else {
+          callback(signInMethodCfg, state)
+        }
+      })
+    } else {
+      var state = OAuth._stateParam(loginStyle, credentialToken, options.redirectUrl, {appId})
+      callback(signInMethodCfg, state)
+    }
+  }
+
+  function launchLogin (signInMethodCfg, state) {
     var loginUrl =
-      'https://open.weixin.qq.com/connect/' + (Wechat.signInWithMP ? 'oauth2/authorize' : 'qrconnect') +
-      '?appid=' + appId +
+      'https://open.weixin.qq.com/connect/' + signInMethodCfg.endpoint +
+      '?appid=' + signInMethodCfg.appId +
       '&redirect_uri=' + OAuth._redirectUri(serviceName, config, null, {replaceLocalhost: true}) +
       '&response_type=code' +
-      '&scope=' + scope +
+      '&scope=' + signInMethodCfg.scope +
       '&state=' + state +
       '#wechat_redirect'
 
@@ -73,5 +132,5 @@ Meteor.loginWithWechat = function (options, callback) {
   }
 
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
-  Wechat.requestCredential(options, credentialRequestCompleteCallback)
+  WechatService.requestCredential(options, credentialRequestCompleteCallback)
 }

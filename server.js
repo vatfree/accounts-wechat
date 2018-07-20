@@ -1,3 +1,5 @@
+import { check } from 'meteor/check';
+
 const whitelistedFields = [
     'nickname',
     'sex',
@@ -9,7 +11,7 @@ const whitelistedFields = [
     'privilege'
 ];
 
-const serviceName = Wechat.serviceName;
+const serviceName = WechatService.serviceName;
 const serviceVersion = 2;
 const serviceUrls = null;
 const serviceHandler = function (query) {
@@ -57,15 +59,17 @@ var getTokenResponse = function (config, query) {
     }
     var response;
     try {
+        let params = {
+            code: query.code,
+            appid: state.appId,
+            secret: OAuth.openSecret(state.appId === config.mpAppId ? config.mpSecret : (state.appId === config.mobileAppId ? config.mobileSecret : config.secret)),
+            grant_type: 'authorization_code'
+        };
+        //console.log('request wechat access token:', params);
         //Request an access token
         response = HTTP.get(
             "https://api.weixin.qq.com/sns/oauth2/access_token", {
-                params: {
-                    code: query.code,
-                    appid: state.appId,
-                    secret: OAuth.openSecret(state.appId == config.appId ? config.secret : config.mpSecret),
-                    grant_type: 'authorization_code'
-                }
+              params
             }
         );
 
@@ -73,10 +77,11 @@ var getTokenResponse = function (config, query) {
             throw {message: "HTTP response error", response: response};
 
         response.content = JSON.parse(response.content);
+        //console.log('wechat access token req ret:', response.content);
         if (response.content.errcode)
             throw {message: response.content.errcode + " " + response.content.errmsg, response: response};
     } catch (err) {
-        throw _.extend(new Error("Failed to complete OAuth handshake with Wechat. " + err.message),
+        throw _.extend(new Error("Failed to complete OAuth handshake with WechatService. " + err.message),
             {response: err.response});
     }
 
@@ -107,7 +112,7 @@ var getIdentity = function (accessToken, openId) {
 
         return response.content;
     } catch (err) {
-        throw _.extend(new Error("Failed to fetch identity from Wechat. " + err.message),
+        throw _.extend(new Error("Failed to fetch identity from WechatService. " + err.message),
             {response: err.response});
     }
 };
@@ -116,7 +121,7 @@ var getIdentity = function (accessToken, openId) {
 OAuth.registerService(serviceName, serviceVersion, serviceUrls, serviceHandler);
 
 // retrieve credential
-Wechat.retrieveCredential = function (credentialToken, credentialSecret) {
+WechatService.retrieveCredential = function (credentialToken, credentialSecret) {
     return OAuth.retrieveCredential(credentialToken, credentialSecret);
 };
 
@@ -130,4 +135,29 @@ Accounts.addAutopublishFields({
     forOtherUsers: _.map(
         whitelistedFields,
         function (subfield) { return 'services.' + serviceName + '.' + subfield; })
+});
+
+Meteor.methods({
+  handleWeChatOauthRequest: function(query) {
+    // allow the client with 3rd party authorization code to directly ask server to handle it
+    check(query.code, String);
+    var oauthResult = serviceHandler(query);
+    var credentialSecret = Random.secret();
+
+    //var credentialToken = OAuth._credentialTokenFromQuery(query);
+    var credentialToken = query.state;
+    // Store the login result so it can be retrieved in another
+    // browser tab by the result handler
+    OAuth._storePendingCredential(credentialToken, {
+      serviceName: serviceName,
+      serviceData: oauthResult.serviceData,
+      options: oauthResult.options
+    }, credentialSecret);
+
+    // return the credentialToken and credentialSecret back to client
+    return {
+      'credentialToken': credentialToken,
+      'credentialSecret': credentialSecret
+    };
+  }
 });
