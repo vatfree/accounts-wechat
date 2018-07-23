@@ -95,16 +95,16 @@ WechatService.requestCredential = function (options, credentialRequestCompleteCa
         if (err) {
           console.error(err)
         } else {
-          callback(signInMethodCfg, state)
+          callback(signInMethodCfg, state, loginStyle)
         }
       })
     } else {
       var state = OAuth._stateParam(loginStyle, credentialToken, options.redirectUrl, {appId})
-      callback(signInMethodCfg, state)
+      callback(signInMethodCfg, state, loginStyle)
     }
   }
 
-  function launchLogin (signInMethodCfg, state) {
+  function launchLogin (signInMethodCfg, state, loginStyle) {
     var loginUrl =
       'https://open.weixin.qq.com/connect/' + signInMethodCfg.endpoint +
       '?appid=' + signInMethodCfg.appId +
