@@ -43,6 +43,15 @@ WechatService.requestCredential = function (options, credentialRequestCompleteCa
 
   WechatService.signInMethod = WechatService.withinWeChatBrowser && !!config.mpAppId ? 'mp' : 'webapp';
   if (Meteor.isCordova && config.mobileAppId && Wechat) {
+    // FIXME: sometimes wechat is not installed, e.g. on iPad, or for some reason.
+    //        in such cases, indeed we want the scan qrcode mode to work
+    //        BUT, the qrcode mode bind with certain domain, for the webApp appId
+    //        In cordova, we have localhost:random-port so will not work.
+    //        Our best way out:
+    //        1. lead user to use browser to open app.circleplus.cn then scan the qrcode
+    //        2. with inner-browser, or device browser open website & login with wechat qrcode
+    //           then finally transfer the login token back to the app and signed in.
+    //           SO we need a way to open app with login state token from signed in browser instance.
     Wechat.isInstalled(function(installed) {
       if (!installed) {
         return prepareLogin(launchLogin);
