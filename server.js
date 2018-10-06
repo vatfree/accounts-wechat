@@ -8,14 +8,14 @@ checkNpmVersions({
 const WeChatOAuth = require('wechat-oauth');
 
 const whitelistedFields = [
-    'nickname',
-    'sex',
-    'language',
-    'province',
-    'city',
-    'country',
-    'headimgurl',
-    'privilege'
+  'nickname',
+  'sex',
+  'language',
+  'province',
+  'city',
+  'country',
+  'headimgurl',
+  'privilege'
 ];
 
 const serviceName = WechatService.serviceName;
@@ -24,132 +24,161 @@ const serviceUrls = null;
 let useUnionIdAsMainId = false;
 
 const getServiceConfig = function() {
-  let config = ServiceConfiguration.configurations.findOne({service: serviceName});
+  let config = ServiceConfiguration.configurations.findOne({
+    service: serviceName
+  });
   if (!config)
-      throw new ServiceConfiguration.ConfigError();
+    throw new ServiceConfiguration.ConfigError();
   useUnionIdAsMainId = config.mainId === 'unionId';
   return config;
 }
 
-const serviceHandler = function (query) {
-    let config = getServiceConfig();
+const serviceHandler = function(query) {
+  let config = getServiceConfig();
 
-    let response = getTokenResponse(config, query);
+  let response = getTokenResponse(config, query);
 
-    const expiresAt = (+new Date) + (1000 * parseInt(response.expiresIn, 10));
-    const {appId, accessToken, scope, openId, unionId} = response;
-    let serviceData = {
-        appId,
-        accessToken,
-        expiresAt,
-        openId,
-        unionId,
-        scope,
-        id: useUnionIdAsMainId ? unionId : openId // id is required by Meteor
-    };
+  const expiresAt = (+new Date) + (1000 * parseInt(response.expiresIn, 10));
+  const {
+    appId,
+    accessToken,
+    scope,
+    openId,
+    unionId
+  } = response;
+  let serviceData = {
+    appId,
+    accessToken,
+    expiresAt,
+    openId,
+    unionId,
+    scope,
+    id: useUnionIdAsMainId ? unionId : openId // id is required by Meteor
+  };
 
-    // only set the token in serviceData if it's there. this ensures
-    // that we don't lose old ones
-    if (response.refreshToken)
-        serviceData.refreshToken = response.refreshToken;
+  // only set the token in serviceData if it's there. this ensures
+  // that we don't lose old ones
+  if (response.refreshToken)
+    serviceData.refreshToken = response.refreshToken;
 
-    let identity = getIdentity(accessToken, openId);
-    let fields = _.pick(identity, whitelistedFields);
-    _.extend(serviceData, fields);
+  let identity = getIdentity(accessToken, openId);
+  let fields = _.pick(identity, whitelistedFields);
+  _.extend(serviceData, fields);
 
-    return {
-        serviceData: serviceData,
-        options: {
-            profile: fields
-        }
-    };
+  return {
+    serviceData: serviceData,
+    options: {
+      profile: fields
+    }
+  };
 };
 
-let getTokenResponse = function (config, query) {
-    let state;
-    try {
-        state = OAuth._stateFromQuery(query);
-    } catch (err) {
-        throw new Error("Failed to extract state in OAuth callback with Wechat: " + query.state);
-    }
-    let response;
-    try {
-        let params = {
-            code: query.code,
-            appid: state.appId,
-            secret: OAuth.openSecret(state.appId === config.mpAppId ? config.mpSecret : (state.appId === config.mobileAppId ? config.mobileSecret : config.secret)),
-            grant_type: 'authorization_code'
-        };
-        //console.log('request wechat access token:', params);
-        //Request an access token
-        response = HTTP.get(
-            "https://api.weixin.qq.com/sns/oauth2/access_token", {
-              params
-            }
-        );
-
-        if (response.statusCode !== 200 || !response.content)
-            throw {message: "HTTP response error", response: response};
-
-        response.content = JSON.parse(response.content);
-        //console.log('wechat access token req ret:', response.content);
-        if (response.content.errcode)
-            throw {message: response.content.errcode + " " + response.content.errmsg, response: response};
-    } catch (err) {
-        throw _.extend(new Error("Failed to complete OAuth handshake with WechatService. " + err.message),
-            {response: err.response});
-    }
-
-    return {
-        appId: state.appId,
-        accessToken: response.content.access_token,
-        expiresIn: response.content.expires_in,
-        refreshToken: response.content.refresh_token,
-        scope: response.content.scope,
-        openId: response.content.openid,
-        unionId: response.content.unionid
+let getTokenResponse = function(config, query) {
+  let state;
+  try {
+    state = OAuth._stateFromQuery(query);
+  } catch (err) {
+    throw new Error("Failed to extract state in OAuth callback with Wechat: " + query.state);
+  }
+  let response;
+  try {
+    let params = {
+      code: query.code,
+      appid: state.appId,
+      secret: OAuth.openSecret(state.appId === config.mpAppId ? config.mpSecret : (state.appId === config.mobileAppId ? config.mobileSecret : config.secret)),
+      grant_type: 'authorization_code'
     };
+    //console.log('request wechat access token:', params);
+    //Request an access token
+    response = HTTP.get(
+      "https://api.weixin.qq.com/sns/oauth2/access_token", {
+        params
+      }
+    );
+
+    if (response.statusCode !== 200 || !response.content)
+      throw {
+        message: "HTTP response error",
+        response: response
+      };
+
+    response.content = JSON.parse(response.content);
+    //console.log('wechat access token req ret:', response.content);
+    if (response.content.errcode)
+      throw {
+        message: response.content.errcode + " " + response.content.errmsg,
+        response: response
+      };
+  } catch (err) {
+    throw _.extend(new Error("Failed to complete OAuth handshake with WechatService. " + err.message), {
+      response: err.response
+    });
+  }
+
+  return {
+    appId: state.appId,
+    accessToken: response.content.access_token,
+    expiresIn: response.content.expires_in,
+    refreshToken: response.content.refresh_token,
+    scope: response.content.scope,
+    openId: response.content.openid,
+    unionId: response.content.unionid
+  };
 };
 
-let getIdentity = function (accessToken, openId) {
-    try {
-        let response = HTTP.get("https://api.weixin.qq.com/sns/userinfo", {
-                params: {access_token: accessToken, openid: openId, lang: 'zh-CN'}
-            }
-        );
+let getIdentity = function(accessToken, openId) {
+  try {
+    let response = HTTP.get("https://api.weixin.qq.com/sns/userinfo", {
+      params: {
+        access_token: accessToken,
+        openid: openId,
+        lang: 'zh-CN'
+      }
+    });
 
-        if (response.statusCode !== 200 || !response.content)
-            throw {message: "HTTP response error", response: response};
+    if (response.statusCode !== 200 || !response.content)
+      throw {
+        message: "HTTP response error",
+        response: response
+      };
 
-        response.content = JSON.parse(response.content);
-        if (response.content.errcode)
-            throw {message: response.content.errcode + " " + response.content.errmsg, response: response};
+    response.content = JSON.parse(response.content);
+    if (response.content.errcode)
+      throw {
+        message: response.content.errcode + " " + response.content.errmsg,
+        response: response
+      };
 
-        return response.content;
-    } catch (err) {
-        throw _.extend(new Error("Failed to fetch identity from WechatService. " + err.message),
-            {response: err.response});
-    }
+    return response.content;
+  } catch (err) {
+    throw _.extend(new Error("Failed to fetch identity from WechatService. " + err.message), {
+      response: err.response
+    });
+  }
 };
 
 // register OAuth service
 OAuth.registerService(serviceName, serviceVersion, serviceUrls, serviceHandler);
 
 // retrieve credential
-WechatService.retrieveCredential = function (credentialToken, credentialSecret) {
-    return OAuth.retrieveCredential(credentialToken, credentialSecret);
+WechatService.retrieveCredential = function(credentialToken, credentialSecret) {
+  return OAuth.retrieveCredential(credentialToken, credentialSecret);
 };
 
 Accounts.addAutopublishFields({
-    forLoggedInUser: _.map(
-        // why not publish openId and unionId?
-        whitelistedFields.concat(['accessToken', 'expiresAt']), // don't publish refresh token
-        function (subfield) { return 'services.' + serviceName + '.' + subfield; }
-    ),
+  forLoggedInUser: _.map(
+    // why not publish openId and unionId?
+    whitelistedFields.concat(['accessToken', 'expiresAt']), // don't publish refresh token
+    function(subfield) {
+      return 'services.' + serviceName + '.' + subfield;
+    }
+  ),
 
-    forOtherUsers: _.map(
-        whitelistedFields,
-        function (subfield) { return 'services.' + serviceName + '.' + subfield; })
+  forOtherUsers: _.map(
+    whitelistedFields,
+    function(subfield) {
+      return 'services.' + serviceName + '.' + subfield;
+    })
 });
 
 let wechatOAuthAPI = null;
@@ -175,7 +204,7 @@ const getWeChatOAuthAPI = function() {
       Token.setToken(openid, token, callback);
     }, */
     WechatService.getToken || null,
-    function (openid, token, callback) {
+    function(openid, token, callback) {
       sessionKeys[openid] = token;
       WechatService.setToken && WechatService.setToken(openid, token, callback) || callback();
     },
@@ -183,35 +212,39 @@ const getWeChatOAuthAPI = function() {
   );
 }
 
-const miniAppServiceHandler = function (query) {
-    return new Promise(function(resolve, reject) {
-      getWeChatOAuthAPI().getUserByCode(query, function(err, response) {
-        if (err) {
-          return reject(err);
+const miniAppServiceHandler = function(query) {
+  return new Promise(function(resolve, reject) {
+    getWeChatOAuthAPI().getUserByCode(query, function(err, response) {
+      if (err) {
+        return reject(err);
+      }
+      const {
+        watermark,
+        openId,
+        unionId
+      } = response;
+      let serviceData = {
+        appId: watermark.appid,
+        sessionKey: sessionKeys[openId],
+        openId,
+        unionId,
+        id: useUnionIdAsMainId ? unionId : openId // id is required by Meteor
+      };
+
+      let fields = _.pick(response, whitelistedFields);
+      fields.nickname = response.nickName;
+      fields.sex = response.gender;
+      fields.headimgurl = response.avatarUrl;
+      _.extend(serviceData, fields);
+
+      resolve({
+        serviceData: serviceData,
+        options: {
+          profile: fields
         }
-        const {watermark, openId, unionId} = response;
-        let serviceData = {
-            appId: watermark.appid,
-            sessionKey: sessionKeys[openId],
-            openId,
-            unionId,
-            id: useUnionIdAsMainId ? unionId : openId // id is required by Meteor
-        };
-
-        let fields = _.pick(response, whitelistedFields);
-        fields.nickname = response.nickName;
-        fields.sex = response.gender;
-        fields.headimgurl = response.avatarUrl;
-        _.extend(serviceData, fields);
-
-        resolve({
-            serviceData: serviceData,
-            options: {
-                profile: fields
-            }
-        });
       });
     });
+  });
 };
 
 Meteor.methods({
