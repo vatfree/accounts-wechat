@@ -18,7 +18,7 @@ Package.onUse(function (api) {
     api.use('accounts-oauth');
     api.use('http', 'server');
     api.use('templating', 'client');
-    api.use('tmeasday:check-npm-versions');
+    api.use('tmeasday:check-npm-versions@0.3.2');
 
     api.imply('accounts-base');
 
