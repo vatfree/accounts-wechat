@@ -192,7 +192,7 @@ const getWeChatOAuthAPI = function() {
 
   return wechatOAuthAPI = new WeChatOAuth(
     config.miniAppId,
-    config.miniSecret,
+    OAuth.openSecret(config.miniSecret),
     // XXX: store the token somewhere, and probably also allow the project custom
     //      the token load/save handler in the project rather than in this package code.
     /* function (openid, callback) {
