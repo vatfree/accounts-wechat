@@ -117,7 +117,7 @@ WechatService.requestCredential = function (options, credentialRequestCompleteCa
     var loginUrl =
       'https://open.weixin.qq.com/connect/' + signInMethodCfg.endpoint +
       '?appid=' + signInMethodCfg.appId +
-      '&redirect_uri=' + OAuth._redirectUri(serviceName, config, null, {replaceLocalhost: true}) +
+      '&redirect_uri=' + encodeURIComponent(OAuth._redirectUri(serviceName, config, null, {replaceLocalhost: true})) +
       '&response_type=code' +
       '&scope=' + signInMethodCfg.scope +
       '&state=' + state +

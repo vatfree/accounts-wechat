@@ -85,7 +85,7 @@ let getTokenResponse = function(config, query) {
     let params = {
       code: query.code,
       appid: state.appId,
-      secret: OAuth.openSecret(state.appId === config.mpAppId ? config.mpSecret : (state.appId === config.mobileAppId ? config.mobileSecret : config.secret)),
+      secret: OAuth.openSecret(state.appId === config.mpAppId ? (config.secret && config.secret.mpSecret || config.mpSecret) : (state.appId === config.mobileAppId ? (config.secret && config.secret.mobileSecret || config.mobileSecret) : (config.secret && config.secret.secret || config.secret))),
       grant_type: 'authorization_code'
     };
     //console.log('request wechat access token:', params);
@@ -192,7 +192,7 @@ const getWeChatOAuthAPI = function() {
 
   return wechatOAuthAPI = new WeChatOAuth(
     config.miniAppId,
-    OAuth.openSecret(config.miniSecret),
+    OAuth.openSecret(config.secret && config.secret.miniSecret || config.miniSecret),
     // XXX: store the token somewhere, and probably also allow the project custom
     //      the token load/save handler in the project rather than in this package code.
     /* function (openid, callback) {
