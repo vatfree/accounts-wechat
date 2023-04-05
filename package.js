@@ -1,13 +1,13 @@
 Package.describe({
-    name: 'ulion:accounts-wechat',
-    version: '0.6.0',
+    name: 'vatfree:accounts-wechat',
+    version: '0.6.1',
     summary: 'meteor accounts package for wechat',
-    git: 'https://github.com/ulion/meteor-accounts-wechat',
+    git: 'https://github.com/vatfree/accounts-wechat',
     documentation: 'README.md'
 });
 
 Package.onUse(function (api) {
-    api.versionsFrom('1.2.1');
+    api.versionsFrom('2.3');
     api.use('ecmascript');
     api.use('underscore');
     api.use('random');
